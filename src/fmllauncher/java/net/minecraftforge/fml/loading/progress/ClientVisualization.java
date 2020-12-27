@@ -19,9 +19,11 @@
 
 package net.minecraftforge.fml.loading.progress;
 
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
@@ -63,6 +65,20 @@ class ClientVisualization implements EarlyProgressVisualization.Visualization {
     private void initWindow() {
         GLFWErrorCallback.createPrint(System.err).set();
 
+        // start 7285 - Controller Fix
+        try (MemoryStack memorystack = MemoryStack.stackPush()) {
+            PointerBuffer pointerbuffer = memorystack.mallocPointer(1);
+            int error = GLFW.glfwGetError(pointerbuffer);
+            if (error != 0) {
+                long pointerDescription = pointerbuffer.get();
+                String description = pointerDescription == 0L ? "" : MemoryUtil.memUTF8(pointerDescription);
+                throw new IllegalStateException(String.format("GLFW error before init: [0x%X]%s", error, description));
+            }
+        }
+        List<String> errors = Lists.newArrayList();
+        GLFWErrorCallback original = GLFW.glfwSetErrorCallback((error, desc) -> errors.add(String.format("GLFW error during init: [0x%X]%s", error, desc)));
+        // end 7285 - Controller Fix
+
         long glfwInitBegin = System.nanoTime();
         if (!glfwInit()) {
             throw new IllegalStateException("Unable to initialize GLFW");
@@ -72,6 +88,15 @@ class ClientVisualization implements EarlyProgressVisualization.Visualization {
         if (glfwInitEnd - glfwInitBegin > 1e9) {
             LogManager.getLogger().fatal("WARNING : glfwInit took {} seconds to start.", (glfwInitEnd-glfwInitBegin) / 1.0e9);
         }
+
+        // start 7285 - Controller Fix
+        GLFWErrorCallback ours = GLFW.glfwSetErrorCallback(original);
+        if (ours != null) ours.free();
+
+        for (String error : errors) {
+            LogManager.getLogger().error("GLFW error collected during initialization: {}", error);
+        }
+        // end 7285 - Controller Fix
 
         glfwDefaultWindowHints();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
