@@ -1,11 +1,12 @@
 --- a/com/mojang/blaze3d/platform/GLX.java
 +++ b/com/mojang/blaze3d/platform/GLX.java
-@@ -69,7 +69,7 @@
- 
+@@ -70,7 +70,8 @@
     public static LongSupplier _initGlfw() {
        RenderSystem.assertThread(RenderSystem::isInInitPhase);
--      MainWindow.func_211162_a((p_229879_0_, p_229879_1_) -> {
-+      if (!(Boolean.parseBoolean(System.getProperty("forge.7285.extra", "false")) && !Boolean.parseBoolean(System.getProperty("fml.earlyprogresswindow", "true")))) MainWindow.func_211162_a((p_229879_0_, p_229879_1_) -> {
-          throw new IllegalStateException(String.format("GLFW error before init: [0x%X]%s", p_229879_0_, p_229879_1_));
+       MainWindow.func_211162_a((p_229879_0_, p_229879_1_) -> {
+-         throw new IllegalStateException(String.format("GLFW error before init: [0x%X]%s", p_229879_0_, p_229879_1_));
++         if (!Boolean.parseBoolean(System.getProperty("fml.earlyprogresswindow", "true")) || p_229879_0_ != 0x10004 || !p_229879_1_.contains("gamepad mapping")) // FORGE: Suppress Crash on Invalid GamePad
++            throw new IllegalStateException(String.format("GLFW error before init: [0x%X]%s", p_229879_0_, p_229879_1_));
        });
        List<String> list = Lists.newArrayList();
+       GLFWErrorCallback glfwerrorcallback = GLFW.glfwSetErrorCallback((p_229880_1_, p_229880_2_) -> {

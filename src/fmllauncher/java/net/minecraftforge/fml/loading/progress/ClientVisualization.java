@@ -76,7 +76,7 @@ class ClientVisualization implements EarlyProgressVisualization.Visualization {
             }
         }
         List<String> errors = Lists.newArrayList();
-        GLFWErrorCallback original = GLFW.glfwSetErrorCallback((error, desc) -> errors.add(String.format("GLFW error during init: [0x%X]%s", error, desc)));
+        GLFWErrorCallback original = GLFW.glfwSetErrorCallback((error, desc) -> errors.add(String.format("GLFW error during init: [0x%X]%s", error, desc == 0L ? "" : MemoryUtil.memUTF8(desc))));
         // end 7285 - Controller Fix
 
         long glfwInitBegin = System.nanoTime();
