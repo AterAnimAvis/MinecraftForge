@@ -96,6 +96,17 @@ class ClientVisualization implements EarlyProgressVisualization.Visualization {
         for (String error : errors) {
             LogManager.getLogger().error("GLFW error collected during initialization: {}", error);
         }
+
+        // Potentially Clear Error
+        try (MemoryStack memorystack = MemoryStack.stackPush()) {
+            PointerBuffer pointerbuffer = memorystack.mallocPointer(1);
+            int error = GLFW.glfwGetError(pointerbuffer);
+            if (error != 0) {
+                long pointerDescription = pointerbuffer.get();
+                String description = pointerDescription == 0L ? "" : MemoryUtil.memUTF8(pointerDescription);
+                LogManager.getLogger().error(String.format("Suppressing GLFW error before init: [0x%X]%s", error, description));
+            }
+        }
         // end 7285 - Controller Fix
 
         glfwDefaultWindowHints();
